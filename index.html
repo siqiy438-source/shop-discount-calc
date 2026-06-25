@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>买二送一计算器</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+      background: linear-gradient(160deg, #fff0f5 0%, #fff8fb 60%, #ffffff 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+      color: #333;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .tag {
+      display: inline-block;
+      background: #ffb6c8;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 99px;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #d63b6e;
+    }
+    header p { font-size: 13px; color: #aaa; margin-top: 5px; }
+
+    /* ── 输入卡 ── */
+    .input-card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(214,59,110,0.07);
+      width: 100%;
+      max-width: 420px;
+      padding: 18px 16px 14px;
+      margin-bottom: 14px;
+    }
+    .input-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #d63b6e;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .input-card-title::before {
+      content: "";
+      width: 4px; height: 16px;
+      background: #ffb6c8;
+      border-radius: 99px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    #itemList { display: flex; flex-direction: column; gap: 10px; }
+
+    .item-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.18s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .item-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 99px;
+      background: #fde8ef;
+      color: #d63b6e;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .input-wrap {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-wrap .sym {
+      position: absolute;
+      left: 13px;
+      font-size: 15px;
+      color: #ccc;
+      pointer-events: none;
+    }
+    .price-input {
+      width: 100%;
+      height: 48px;
+      border: 2px solid #f0d6df;
+      border-radius: 12px;
+      padding: 0 12px 0 28px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+      background: #fffafe;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      -webkit-appearance: none;
+    }
+    .price-input:focus { border-color: #d63b6e; background: #fff; }
+
+    .btn-del {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      border-radius: 99px;
+      border: 2px solid #f0d6df;
+      background: #fff;
+      color: #dda0b0;
+      font-size: 17px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: 0.15s;
+    }
+    .btn-del:active { background: #fff0f5; border-color: #d63b6e; color: #d63b6e; }
+    .btn-del.hide { visibility: hidden; pointer-events: none; }
+
+    .btn-add {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      height: 44px;
+      margin-top: 12px;
+      border: 2px dashed #ffb6c8;
+      border-radius: 12px;
+      background: transparent;
+      color: #d63b6e;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-add:active { background: #fff0f5; }
+
+    /* ── 结果卡 ── */
+    .result-card {
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 14px;
+    }
+
+    .result-hint {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      font-size: 14px;
+      color: #ccc;
+      box-shadow: 0 2px 12px rgba(214,59,110,0.05);
+    }
+
+    #resultDetail { display: none; }
+
+    /* ── 分组卡片 ── */
+    .res-group {
+      background: #fff;
+      border: 2px solid #ffb6c8;
+      border-radius: 16px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .res-group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      background: #fff5f8;
+      border-bottom: 1px solid #fde8ef;
+    }
+    .res-group-header .g-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #d63b6e;
+    }
+    .res-group-header .g-tag {
+      font-size: 11px;
+      font-weight: 600;
+      background: #d63b6e;
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 99px;
+    }
+
+    .res-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid #fdf0f4;
+      gap: 10px;
+    }
+    .res-item:last-child { border-bottom: none; }
+
+    .res-item .ri-num {
+      font-size: 12px;
+      color: #bbb;
+      width: 40px;
+      flex-shrink: 0;
+    }
+    .res-item .ri-price {
+      flex: 1;
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+    }
+    .res-item .ri-price::before { content: "¥"; font-size: 12px; font-weight: 400; color: #999; }
+    .res-item .ri-status {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 8px;
+    }
+    .res-item.is-pay .ri-status {
+      background: #f5f5f5;
+      color: #999;
+    }
+    .res-item.is-free {
+      background: #fff8fa;
+    }
+    .res-item.is-free .ri-num { color: #f4a0b8; }
+    .res-item.is-free .ri-price { color: #d63b6e; }
+    .res-item.is-free .ri-price::before { color: #f4a0b8; }
+    .res-item.is-free .ri-status {
+      background: #d63b6e;
+      color: #fff;
+    }
+
+    /* 剩余不足3件 */
+    .res-remain {
+      background: #fff;
+      border: 2px solid #eee;
+      border-radius: 16px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .res-remain-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
+    }
+    .res-remain-header .r-name { font-size: 13px; font-weight: 700; color: #aaa; }
+    .res-remain-header .r-tag {
+      font-size: 11px;
+      color: #bbb;
+      background: #eee;
+      padding: 2px 10px;
+      border-radius: 99px;
+    }
+
+    /* 汇总条 */
+    .summary-bar {
+      background: linear-gradient(135deg, #d63b6e 0%, #f06292 100%);
+      border-radius: 16px;
+      padding: 18px 20px;
+      color: #fff;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .summary-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .summary-row .s-label { font-size: 13px; opacity: 0.85; }
+    .summary-row .s-value { font-size: 16px; font-weight: 700; }
+    .summary-row.main .s-label { font-size: 15px; font-weight: 600; opacity: 1; }
+    .summary-row.main .s-value { font-size: 28px; font-weight: 800; }
+    .summary-row.discount .s-value { color: #ffe082; }
+
+    /* 清空按钮 */
+    .btn-clear {
+      width: 100%;
+      max-width: 420px;
+      height: 52px;
+      border: 2px solid #f0d6df;
+      border-radius: 16px;
+      background: #fff;
+      color: #d63b6e;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      letter-spacing: 1px;
+    }
+    .btn-clear:active { background: #fff5f8; transform: scale(0.98); }
+
+    /* 计算按钮 */
+    .btn-calc {
+      width: 100%;
+      max-width: 420px;
+      height: 56px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #d63b6e 0%, #f06292 100%);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 18px rgba(214,59,110,0.3);
+      transition: transform 0.1s, box-shadow 0.1s;
+      letter-spacing: 2px;
+    }
+    .btn-calc:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(214,59,110,0.2); }
+
+    footer { margin-top: 28px; font-size: 12px; color: #ccc; text-align: center; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="tag">限时活动</div>
+  <h1>买二送一计算器</h1>
+  <p>随便选多少件，自动算哪几件免单</p>
+</header>
+
+<!-- 输入区 -->
+<div class="input-card">
+  <div class="input-card-title" id="inputTitle">输入每件衣服的价格</div>
+  <div id="itemList"></div>
+  <button class="btn-add" id="btnAdd">＋ 再加一件</button>
+</div>
+
+<!-- 结果区 -->
+<div class="result-card">
+  <div class="result-hint" id="resultHint">填写价格后点击"计算结果"</div>
+  <div id="resultDetail" style="display:none;">
+    <!-- 分组列表（动态生成） -->
+    <div id="groupList"></div>
+    <!-- 汇总 -->
+    <div class="summary-bar">
+      <div class="summary-row">
+        <span class="s-label">原价合计</span>
+        <span class="s-value" id="rOriginal">¥0.00</span>
+      </div>
+      <div class="summary-row discount">
+        <span class="s-label" id="rDiscountLabel">活动优惠</span>
+        <span class="s-value" id="rDiscount">-¥0.00</span>
+      </div>
+      <div class="summary-row main">
+        <span class="s-label">应付金额</span>
+        <span class="s-value" id="rFinal">¥0.00</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="btn-calc" id="btnCalc">计算结果 →</button>
+<button class="btn-clear" id="btnClear">清空，下一位顾客</button>
+
+<footer>买二送一 · 每满3件送最低价那件</footer>
+
+<script>
+  const itemList       = document.getElementById('itemList');
+  const inputTitle     = document.getElementById('inputTitle');
+  const resultHint     = document.getElementById('resultHint');
+  const resultDetail   = document.getElementById('resultDetail');
+  const groupList      = document.getElementById('groupList');
+  const rOriginal      = document.getElementById('rOriginal');
+  const rDiscount      = document.getElementById('rDiscount');
+  const rDiscountLabel = document.getElementById('rDiscountLabel');
+  const rFinal         = document.getElementById('rFinal');
+
+  let count = 0;
+
+  function fmt(n) { return n.toFixed(2); }
+
+  function addItem() {
+    count++;
+    const id = count;
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.dataset.id = id;
+    row.innerHTML = `
+      <span class="item-num">${id}</span>
+      <div class="input-wrap">
+        <span class="sym">¥</span>
+        <input class="price-input" id="inp-${id}" type="number"
+          inputmode="decimal" placeholder="0.00" min="0" step="0.01" />
+      </div>
+      <button class="btn-del ${id <= 1 ? 'hide' : ''}" data-id="${id}">×</button>
+    `;
+    row.querySelector('.price-input').addEventListener('input', resetResult);
+    itemList.appendChild(row);
+    updateTitle();
+    refreshDelBtns();
+  }
+
+  function removeItem(id) {
+    const row = itemList.querySelector(`.item-row[data-id="${id}"]`);
+    if (row) row.remove();
+    // 重新编号
+    const rows = itemList.querySelectorAll('.item-row');
+    count = rows.length;
+    rows.forEach((r, i) => {
+      r.dataset.id = i + 1;
+      r.querySelector('.item-num').textContent = i + 1;
+      const inp = r.querySelector('.price-input');
+      inp.id = `inp-${i + 1}`;
+      const btn = r.querySelector('.btn-del');
+      btn.dataset.id = i + 1;
+    });
+    updateTitle();
+    refreshDelBtns();
+    resetResult();
+  }
+
+  function refreshDelBtns() {
+    const rows = itemList.querySelectorAll('.item-row');
+    rows.forEach(r => {
+      const btn = r.querySelector('.btn-del');
+      btn.className = 'btn-del' + (rows.length > 1 ? '' : ' hide');
+    });
+  }
+
+  function updateTitle() {
+    inputTitle.textContent = `共 ${count} 件衣服`;
+  }
+
+  // 事件委托：删除
+  itemList.addEventListener('click', e => {
+    const btn = e.target.closest('.btn-del');
+    if (!btn || btn.classList.contains('hide')) return;
+    removeItem(parseInt(btn.dataset.id));
+  });
+
+  // 输入变化时收起旧结果，提示重新计算
+  function resetResult() {
+    resultHint.textContent = '价格有变动，点击"计算结果"重新计算';
+    resultHint.style.display = '';
+    resultDetail.style.display = 'none';
+  }
+
+  document.getElementById('btnCalc').addEventListener('click', calculate);
+
+  document.getElementById('btnAdd').addEventListener('click', () => {
+    addItem();
+    document.getElementById(`inp-${count}`).focus();
+    resetResult();
+  });
+
+  function calculate() {
+    const rows = Array.from(itemList.querySelectorAll('.item-row'));
+    // 只取有效价格（忽略空白行）
+    const items = rows
+      .map((r, i) => {
+        const v = parseFloat(r.querySelector('.price-input').value);
+        return { label: i + 1, val: isNaN(v) || v <= 0 ? null : v };
+      })
+      .filter(it => it.val !== null);
+
+    if (items.length < 1) {
+      resultHint.style.display = '';
+      resultHint.textContent = '请至少输入一件衣服的价格';
+      resultDetail.style.display = 'none';
+      return;
+    }
+
+    // 按价格从高到低排序，分组：每3件一组，组内最低价（第3件）免单
+    const sorted = [...items].sort((a, b) => b.val - a.val);
+    const fullGroupCount = Math.floor(sorted.length / 3);
+    const remain = sorted.slice(fullGroupCount * 3); // 不足3件的余量
+
+    // 渲染分组
+    groupList.innerHTML = '';
+
+    for (let g = 0; g < fullGroupCount; g++) {
+      const trio = sorted.slice(g * 3, g * 3 + 3); // [最贵, 次贵, 最低] 同一组
+      // trio[2] 是这组里最低价 → 免单
+      const card = document.createElement('div');
+      card.className = 'res-group';
+      card.innerHTML = `
+        <div class="res-group-header">
+          <span class="g-name">第 ${g + 1} 组</span>
+          <span class="g-tag">买2件 送1件</span>
+        </div>
+        ${trio.map((it, i) => `
+          <div class="res-item ${i === 2 ? 'is-free' : 'is-pay'}">
+            <span class="ri-num">第${it.label}件</span>
+            <span class="ri-price">${fmt(it.val)}</span>
+            <span class="ri-status">${i === 2 ? '免单 🎉' : '付款'}</span>
+          </div>
+        `).join('')}
+      `;
+      groupList.appendChild(card);
+    }
+
+    // 剩余不足3件（全价）
+    if (remain.length > 0) {
+      const card = document.createElement('div');
+      card.className = 'res-remain';
+      card.innerHTML = `
+        <div class="res-remain-header">
+          <span class="r-name">不足3件（全价）</span>
+          <span class="r-tag">还差 ${3 - remain.length} 件才能再免1件</span>
+        </div>
+        ${remain.map(it => `
+          <div class="res-item is-pay">
+            <span class="ri-num">第${it.label}件</span>
+            <span class="ri-price">${fmt(it.val)}</span>
+            <span class="ri-status">付款</span>
+          </div>
+        `).join('')}
+      `;
+      groupList.appendChild(card);
+    }
+
+    const original = items.reduce((s, it) => s + it.val, 0);
+    const discount = sorted.slice(0, fullGroupCount * 3)
+      .filter((_, i) => (i + 1) % 3 === 0)
+      .reduce((s, it) => s + it.val, 0);
+    const final = original - discount;
+
+    rOriginal.textContent      = '¥' + fmt(original);
+    rDiscount.textContent      = '-¥' + fmt(discount);
+    rDiscountLabel.textContent = fullGroupCount > 0
+      ? `活动优惠（免 ${fullGroupCount} 件）`
+      : '活动优惠（未满3件）';
+    rFinal.textContent = '¥' + fmt(final);
+
+    resultHint.style.display   = 'none';
+    resultDetail.style.display = 'block';
+  }
+
+  document.getElementById('btnClear').addEventListener('click', () => {
+    itemList.innerHTML = '';
+    count = 0;
+    resultHint.textContent     = '填写价格后点击"计算结果"';
+    resultHint.style.display   = '';
+    resultDetail.style.display = 'none';
+    addItem();
+    addItem();
+    addItem();
+  });
+
+  // 初始3件
+  addItem(); addItem(); addItem();
+</script>
+</body>
+</html>
